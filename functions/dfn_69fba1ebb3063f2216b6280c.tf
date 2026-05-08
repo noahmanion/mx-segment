@@ -4,7 +4,454 @@ import {
 }
 
 resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
-  code          = "// MX Build · Pipedrive Destination Function\n// Segment → Pipedrive\n// Connect to both JS and .NET sources\n\n// ─── HELPERS ────────────────────────────────────────────────────────────────\n\nasync function findPersonByEmail(email, settings) {\n\tconst res = await fetch(\n\t\t`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/persons/search` +\n\t\t\t`?term=$${encodeURIComponent(email)}&fields=email&exact_match=true` +\n\t\t\t`&api_token=$${settings.PIPEDRIVE_API_KEY}`\n\t);\n\tconst data = await res.json();\n\treturn data?.data?.items?.[0]?.item || null;\n}\n\nasync function findOpenDeal(personId, pipelineId, settings) {\n\tconst res = await fetch(\n\t\t`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/persons/$${personId}/deals` +\n\t\t\t`?status=open&api_token=$${settings.PIPEDRIVE_API_KEY}`\n\t);\n\tconst data = await res.json();\n\treturn data?.data?.find(d => d.pipeline_id === parseInt(pipelineId)) || null;\n}\n\nasync function pipedrivePost(path, payload, settings) {\n\tconst res = await fetch(\n\t\t`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1$${path}?api_token=$${settings.PIPEDRIVE_API_KEY}`,\n\t\t{\n\t\t\tmethod: 'POST',\n\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\tbody: JSON.stringify(payload)\n\t\t}\n\t);\n\treturn res.json();\n}\n\nasync function pipedrivePut(path, payload, settings) {\n\tconst res = await fetch(\n\t\t`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1$${path}?api_token=$${settings.PIPEDRIVE_API_KEY}`,\n\t\t{\n\t\t\tmethod: 'PUT',\n\t\t\theaders: { 'Content-Type': 'application/json' },\n\t\t\tbody: JSON.stringify(payload)\n\t\t}\n\t);\n\treturn res.json();\n}\n\nfunction deriveChannel(utmSource) {\n\tif (!utmSource) return 'Direct';\n\tif (/google|adwords/i.test(utmSource)) return 'Google';\n\tif (/meta|facebook|instagram|fb/i.test(utmSource)) return 'Meta';\n\tif (/referr/i.test(utmSource)) return 'Referral';\n\treturn 'Other';\n}\n\n// ─── IDENTIFY ───────────────────────────────────────────────────────────────\n\nasync function onIdentify(event, settings) {\n\tconst traits = event.traits || {};\n\tconst email = traits.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\n\tconst personPayload = {\n\t\tname:\n\t\t\t[traits.first_name, traits.last_name].filter(Boolean).join(' ') || email,\n\t\temail: [{ value: email, primary: true }],\n\t\tphone: traits.phone ? [{ value: traits.phone, primary: true }] : undefined,\n\t\t[settings.PIPEDRIVE_FIELD_UTM_SOURCE]: traits.utm_source,\n\t\t[settings.PIPEDRIVE_FIELD_UTM_MEDIUM]: traits.utm_medium,\n\t\t[settings.PIPEDRIVE_FIELD_UTM_CAMPAIGN]: traits.utm_campaign,\n\t\t[settings.PIPEDRIVE_FIELD_INDUSTRY]: traits.industry,\n\t\t[settings.PIPEDRIVE_FIELD_SIGNUP_SOURCE]: traits.signup_source,\n\t\t[settings.PIPEDRIVE_FIELD_IS_TEST]: traits.is_test ? 'Yes' : undefined\n\t};\n\n\tif (person) {\n\t\tawait pipedrivePut(`/persons/$${person.id}`, personPayload, settings);\n\t} else {\n\t\tawait pipedrivePost('/persons', personPayload, settings);\n\t}\n}\n\n// ─── TRACK DISPATCHER ───────────────────────────────────────────────────────\n\nasync function onTrack(event, settings) {\n\tconst handlers = {\n\t\t'Signed Up': handleSignedUp,\n\t\t'Signup Form Completed': handleSignupFormCompleted,\n\t\t'Onboarding Started': handleOnboardingStarted,\n\t\t'Onboarding Abandoned': handleOnboardingAbandoned,\n\t\t'Estimate Sent': handleEstimateSent,\n\t\t'Paywall Viewed': handlePaywallViewed,\n\t\t'Subscription Started': handleSubscriptionStarted\n\t};\n\tconst handler = handlers[event.event];\n\tif (handler) await handler(event, settings);\n}\n\n// ─── TRACK HANDLERS ─────────────────────────────────────────────────────────\n\nasync function handleSignedUp(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\t// Guard against duplicate deals\n\tconst existing = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (existing) return;\n\n\tconst today = new Date();\n\tconst trialEnd = new Date(today);\n\ttrialEnd.setDate(trialEnd.getDate() + 14);\n\n\tawait pipedrivePost(\n\t\t'/deals',\n\t\t{\n\t\t\ttitle: `$${person.name || email} — Trial`,\n\t\t\tperson_id: person.id,\n\t\t\tstage_id: parseInt(settings.PIPEDRIVE_STAGE_TRIAL_SIGNUP), // 41\n\t\t\tpipeline_id: parseInt(settings.PIPEDRIVE_PIPELINE_ID), // 8\n\t\t\tvalue: 1188, // $99/mo x 12 ACV\n\t\t\tcurrency: 'USD',\n\t\t\t[settings.PD_DEAL_TRIAL_STARTED_AT]: today.toISOString().split('T')[0],\n\t\t\t[settings.PD_DEAL_TRIAL_ENDS_AT]: trialEnd.toISOString().split('T')[0]\n\t\t\t// Channel populated in handleSignupFormCompleted\n\t\t},\n\t\tsettings\n\t);\n}\n\nasync function handleSignupFormCompleted(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\t// Update Person with UTM and referrer data\n\tawait pipedrivePut(\n\t\t`/persons/$${person.id}`,\n\t\t{\n\t\t\t[settings.PIPEDRIVE_FIELD_UTM_SOURCE]: event.properties?.utm_source,\n\t\t\t[settings.PIPEDRIVE_FIELD_UTM_MEDIUM]: event.properties?.utm_medium,\n\t\t\t[settings.PIPEDRIVE_FIELD_UTM_CAMPAIGN]: event.properties?.utm_campaign,\n\t\t\t[settings.PIPEDRIVE_FIELD_REFERRER_URL]: event.properties?.referrer,\n\t\t\t[settings.PD_FIELD_HAS_REFERRAL_CODE]: event.properties?.has_referral_code\n\t\t\t\t? 'Yes'\n\t\t\t\t: 'No',\n\t\t\t[settings.PIPEDRIVE_FIELD_SIGNUP_SOURCE]: event.properties?.source\n\t\t},\n\t\tsettings\n\t);\n\n\t// Update Deal channel\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tawait pipedrivePut(\n\t\t`/deals/$${deal.id}`,\n\t\t{\n\t\t\t[settings.PIPEDRIVE_DEAL_FIELD_CHANNEL]: deriveChannel(\n\t\t\t\tevent.properties?.utm_source\n\t\t\t)\n\t\t},\n\t\tsettings\n\t);\n}\n\nasync function handleOnboardingStarted(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tawait pipedrivePut(\n\t\t`/deals/$${deal.id}`,\n\t\t{\n\t\t\tstage_id: parseInt(settings.PIPEDRIVE_STAGE_ONBOARDED) // 42\n\t\t},\n\t\tsettings\n\t);\n}\n\nasync function handleOnboardingAbandoned(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tawait pipedrivePost(\n\t\t'/notes',\n\t\t{\n\t\t\tcontent: `Onboarding abandoned at step: $${event.properties?.last_step_completed || 'unknown'}`,\n\t\t\tdeal_id: deal.id\n\t\t},\n\t\tsettings\n\t);\n}\n\nasync function handleEstimateSent(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tconst today = new Date().toISOString().split('T')[0];\n\tconst alreadyActivated = deal[settings.PD_DEAL_ACTIVATED_AT];\n\tconst currentCount = deal[settings.PD_DEAL_ESTIMATE_COUNT] || 0;\n\n\tconst updatePayload = {\n\t\t[settings.PD_DEAL_LAST_ESTIMATE_AT]: today,\n\t\t[settings.PD_DEAL_ESTIMATE_COUNT]: currentCount + 1\n\t};\n\n\tif (!alreadyActivated) {\n\t\tupdatePayload.stage_id = parseInt(settings.PIPEDRIVE_STAGE_ONBOARDED); // 42\n\t\tupdatePayload[settings.PD_DEAL_ACTIVATED_AT] = today;\n\t}\n\n\tawait pipedrivePut(`/deals/$${deal.id}`, updatePayload, settings);\n}\n\nasync function handlePaywallViewed(event, settings) {\n\tconst email = event.context?.traits?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tconst current = deal[settings.PD_DEAL_PAYWALL_VIEWS] || 0;\n\n\tawait pipedrivePut(\n\t\t`/deals/$${deal.id}`,\n\t\t{\n\t\t\t[settings.PD_DEAL_PAYWALL_VIEWS]: current + 1\n\t\t},\n\t\tsettings\n\t);\n}\n\nasync function handleSubscriptionStarted(event, settings) {\n\tconst email = event.context?.traits?.email || event.properties?.email;\n\tif (!email) return;\n\n\tconst person = await findPersonByEmail(email, settings);\n\tif (!person) return;\n\n\tconst deal = await findOpenDeal(\n\t\tperson.id,\n\t\tsettings.PIPEDRIVE_PIPELINE_ID,\n\t\tsettings\n\t);\n\tif (!deal) return;\n\n\tawait pipedrivePut(\n\t\t`/deals/$${deal.id}`,\n\t\t{\n\t\t\tstage_id: parseInt(settings.PIPEDRIVE_STAGE_PAID), // 44\n\t\t\tvalue: (event.properties?.mrr || 99) * 12,\n\t\t\t[settings.PIPEDRIVE_DEAL_FIELD_MRR]: event.properties?.mrr,\n\t\t\t[settings.PIPEDRIVE_DEAL_FIELD_PLAN_NAME]: event.properties?.plan_name,\n\t\t\t[settings.PD_DEAL_DAYS_IN_TRIAL]:\n\t\t\t\tevent.properties?.days_in_trial_at_conversion\n\t\t},\n\t\tsettings\n\t);\n}\n"
+  code = <<-EOT
+// MX Build · Pipedrive Destination Function
+// Segment → Pipedrive
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+async function findPersonByEmail(email, settings) {
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/persons/search` +
+			`?term=$${encodeURIComponent(email)}&fields=email&exact_match=true` +
+			`&api_token=$${settings.PIPEDRIVE_API_KEY}`
+	);
+	const data = await res.json();
+	return data?.data?.items?.[0]?.item || null;
+}
+
+async function findOpenDeal(personId, pipelineId, settings) {
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/persons/$${personId}/deals` +
+			`?status=open&api_token=$${settings.PIPEDRIVE_API_KEY}`
+	);
+	const data = await res.json();
+	return data?.data?.find(d => d.pipeline_id === parseInt(pipelineId)) || null;
+}
+
+async function findAllOpenDeals(personId, settings) {
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/persons/$${personId}/deals` +
+			`?status=open&api_token=$${settings.PIPEDRIVE_API_KEY}`
+	);
+	const data = await res.json();
+	return data?.data || [];
+}
+
+async function pipedrivePost(path, payload, settings) {
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1$${path}?api_token=$${settings.PIPEDRIVE_API_KEY}`,
+		{
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		}
+	);
+	return res.json();
+}
+
+async function pipedrivePut(path, payload, settings) {
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1$${path}?api_token=$${settings.PIPEDRIVE_API_KEY}`,
+		{
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		}
+	);
+	return res.json();
+}
+
+async function loopsPatch(email, properties, settings) {
+	if (!settings.LOOPS_API_KEY || !email) return;
+	await fetch('https://app.loops.so/api/v1/contacts/update', {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json',
+			'Authorization': `Bearer $${settings.LOOPS_API_KEY}`
+		},
+		body: JSON.stringify({ email, ...properties })
+	});
+}
+
+async function getNextRepId(settings) {
+	if (!settings.PIPEDRIVE_REP_IDS) return undefined;
+	const repIds = settings.PIPEDRIVE_REP_IDS.split(',').map(id => id.trim()).filter(Boolean);
+	if (repIds.length === 0) return undefined;
+	if (repIds.length === 1) return repIds[0];
+
+	const res = await fetch(
+		`https://$${settings.PIPEDRIVE_DOMAIN}/api/v1/deals` +
+			`?pipeline_id=$${settings.PIPEDRIVE_PIPELINE_ID}&status=open&sort=add_time+DESC&limit=50` +
+			`&api_token=$${settings.PIPEDRIVE_API_KEY}`
+	);
+	const data = await res.json();
+	const deals = data?.data || [];
+
+	for (const d of deals) {
+		const ownerId = String(d.user_id?.id ?? d.user_id ?? '');
+		const idx = repIds.indexOf(ownerId);
+		if (idx !== -1) {
+			return repIds[(idx + 1) % repIds.length];
+		}
+	}
+	return repIds[0];
+}
+
+function deriveChannel(utmSource) {
+	if (!utmSource) return 'Direct';
+	if (/google|adwords/i.test(utmSource)) return 'Google';
+	if (/meta|facebook|instagram|fb/i.test(utmSource)) return 'Meta';
+	if (/referr/i.test(utmSource)) return 'Referral';
+	return 'Other';
+}
+
+function computeScoreTier(score) {
+	if (score === 0) return 'low';
+	if (score <= 3) return 'mid';
+	return 'high';
+}
+
+function isWithin24Hours(trialStartedAt) {
+	if (!trialStartedAt) return false;
+	const start = new Date(trialStartedAt);
+	const now = new Date();
+	return (now - start) < 24 * 60 * 60 * 1000;
+}
+
+function isHighRevenueBand(band) {
+	if (!band) return false;
+	if (/^under\s*\$50|\bless\s+than\s*\$50/i.test(band)) return false;
+	const m = band.match(/\$([\d,]+)\s*([KkMm]?)/);
+	if (!m) return false;
+	const n = parseFloat(m[1].replace(/,/g, ''));
+	const u = m[2].toUpperCase();
+	const kValue = u === 'M' ? n * 1000 : u === 'K' ? n : n / 1000;
+	return kValue >= 50;
+}
+
+async function updateEngagementScore(deal, email, additionalPoints, settings) {
+	const currentScore = deal[settings.PD_DEAL_ENGAGEMENT_SCORE] || 0;
+	const newScore = currentScore + additionalPoints;
+	const tier = computeScoreTier(newScore);
+	await pipedrivePut(`/deals/$${deal.id}`, {
+		[settings.PD_DEAL_ENGAGEMENT_SCORE]: newScore,
+		[settings.PD_DEAL_SCORE_TIER]: tier
+	}, settings);
+	await loopsPatch(email, { score_tier: tier }, settings);
+}
+
+// ─── IDENTIFY ───────────────────────────────────────────────────────────────
+
+async function onIdentify(event, settings) {
+	const traits = event.traits || {};
+	const email = traits.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+
+	const personPayload = {
+		name: [traits.first_name, traits.last_name].filter(Boolean).join(' ') || email,
+		email: [{ value: email, primary: true }],
+		phone: traits.phone ? [{ value: traits.phone, primary: true }] : undefined,
+		[settings.PIPEDRIVE_FIELD_UTM_SOURCE]: traits.utm_source,
+		[settings.PIPEDRIVE_FIELD_UTM_MEDIUM]: traits.utm_medium,
+		[settings.PIPEDRIVE_FIELD_UTM_CAMPAIGN]: traits.utm_campaign,
+		[settings.PIPEDRIVE_FIELD_INDUSTRY]: traits.industry,
+		[settings.PIPEDRIVE_FIELD_SIGNUP_SOURCE]: traits.signup_source,
+		[settings.PIPEDRIVE_FIELD_IS_TEST]: traits.is_test ? 'Yes' : undefined
+	};
+
+	if (person) {
+		await pipedrivePut(`/persons/$${person.id}`, personPayload, settings);
+	} else {
+		await pipedrivePost('/persons', personPayload, settings);
+	}
+}
+
+// ─── TRACK DISPATCHER ───────────────────────────────────────────────────────
+
+async function onTrack(event, settings) {
+	const handlers = {
+		'Signed Up': handleSignedUp,
+		'Signup Form Completed': handleSignupFormCompleted,
+		'Onboarding Started': handleOnboardingStarted,
+		'Onboarding Abandoned': handleOnboardingAbandoned,
+		'Estimate Sent': handleEstimateSent,
+		'Invoice Created': handleInvoiceCreated,
+		'Checklist Completed': handleChecklistCompleted,
+		'Paywall Viewed': handlePaywallViewed,
+		'Subscription Started': handleSubscriptionStarted
+	};
+	const handler = handlers[event.event];
+	if (handler) await handler(event, settings);
+}
+
+// ─── TRACK HANDLERS ─────────────────────────────────────────────────────────
+
+async function handleSignedUp(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const allOpenDeals = await findAllOpenDeals(person.id, settings);
+
+	// Replit dedup guard: skip if any open deal exists outside our pipeline
+	const outsidePipeline = allOpenDeals.filter(
+		d => d.pipeline_id !== parseInt(settings.PIPEDRIVE_PIPELINE_ID)
+	);
+	if (outsidePipeline.length > 0) {
+		console.log(`[WARN] Skipping deal creation for $${email}: found $${outsidePipeline.length} open deal(s) outside pipeline $${settings.PIPEDRIVE_PIPELINE_ID}`);
+		return;
+	}
+
+	// Standard dedup: skip if deal already exists in our pipeline
+	const existing = allOpenDeals.find(
+		d => d.pipeline_id === parseInt(settings.PIPEDRIVE_PIPELINE_ID)
+	);
+	if (existing) return;
+
+	const today = new Date();
+	const trialEnd = new Date(today);
+	trialEnd.setDate(trialEnd.getDate() + 14);
+
+	const ownerId = await getNextRepId(settings);
+
+	await pipedrivePost(
+		'/deals',
+		{
+			title: `$${person.name || email} — Trial`,
+			person_id: person.id,
+			stage_id: parseInt(settings.PIPEDRIVE_STAGE_TRIAL_SIGNUP),
+			pipeline_id: parseInt(settings.PIPEDRIVE_PIPELINE_ID),
+			value: 1188,
+			currency: 'USD',
+			user_id: ownerId ? parseInt(ownerId) : undefined,
+			[settings.PD_DEAL_TRIAL_STARTED_AT]: today.toISOString().split('T')[0],
+			[settings.PD_DEAL_TRIAL_ENDS_AT]: trialEnd.toISOString().split('T')[0]
+		},
+		settings
+	);
+}
+
+async function handleSignupFormCompleted(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	await pipedrivePut(
+		`/persons/$${person.id}`,
+		{
+			[settings.PIPEDRIVE_FIELD_UTM_SOURCE]: event.properties?.utm_source,
+			[settings.PIPEDRIVE_FIELD_UTM_MEDIUM]: event.properties?.utm_medium,
+			[settings.PIPEDRIVE_FIELD_UTM_CAMPAIGN]: event.properties?.utm_campaign,
+			[settings.PIPEDRIVE_FIELD_REFERRER_URL]: event.properties?.referrer,
+			[settings.PD_FIELD_HAS_REFERRAL_CODE]: event.properties?.has_referral_code ? 'Yes' : 'No',
+			[settings.PIPEDRIVE_FIELD_SIGNUP_SOURCE]: event.properties?.source,
+			[settings.PIPEDRIVE_FIELD_INDUSTRY]: event.properties?.trade
+		},
+		settings
+	);
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	const revenueBand = event.properties?.revenue_band || '';
+	const highRevenue = isHighRevenueBand(revenueBand);
+
+	const dealUpdate = {
+		[settings.PIPEDRIVE_DEAL_FIELD_CHANNEL]: deriveChannel(event.properties?.utm_source),
+		[settings.PD_DEAL_REVENUE_BAND]: revenueBand || undefined,
+		[settings.PD_DEAL_COMPANY_SIZE]: event.properties?.company_size
+	};
+
+	if (highRevenue && settings.PD_DEAL_ENGAGEMENT_SCORE) {
+		const currentScore = deal[settings.PD_DEAL_ENGAGEMENT_SCORE] || 0;
+		const newScore = currentScore + 1;
+		const tier = computeScoreTier(newScore);
+		dealUpdate[settings.PD_DEAL_ENGAGEMENT_SCORE] = newScore;
+		dealUpdate[settings.PD_DEAL_SCORE_TIER] = tier;
+		await pipedrivePut(`/deals/$${deal.id}`, dealUpdate, settings);
+		await loopsPatch(email, { score_tier: tier }, settings);
+	} else {
+		await pipedrivePut(`/deals/$${deal.id}`, dealUpdate, settings);
+	}
+}
+
+async function handleOnboardingStarted(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	await pipedrivePut(
+		`/deals/$${deal.id}`,
+		{ stage_id: parseInt(settings.PIPEDRIVE_STAGE_ONBOARDED) },
+		settings
+	);
+}
+
+async function handleOnboardingAbandoned(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	await Promise.all([
+		pipedrivePost(
+			'/notes',
+			{
+				content: `Onboarding abandoned at step: $${event.properties?.last_step_completed || 'unknown'}`,
+				deal_id: deal.id
+			},
+			settings
+		),
+		pipedrivePut(
+			`/deals/$${deal.id}`,
+			{ stage_id: parseInt(settings.PIPEDRIVE_STAGE_TRIAL_SIGNUP) },
+			settings
+		)
+	]);
+}
+
+async function handleEstimateSent(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	const today = new Date().toISOString().split('T')[0];
+	const alreadyActivated = deal[settings.PD_DEAL_ACTIVATED_AT];
+	const currentCount = deal[settings.PD_DEAL_ESTIMATE_COUNT] || 0;
+	const isFirstEstimate = currentCount === 0;
+
+	const updatePayload = {
+		[settings.PD_DEAL_LAST_ESTIMATE_AT]: today,
+		[settings.PD_DEAL_ESTIMATE_COUNT]: currentCount + 1
+	};
+
+	if (!alreadyActivated) {
+		updatePayload.stage_id = parseInt(settings.PIPEDRIVE_STAGE_ONBOARDED);
+		updatePayload[settings.PD_DEAL_ACTIVATED_AT] = today;
+	}
+
+	await pipedrivePut(`/deals/$${deal.id}`, updatePayload, settings);
+
+	if (isFirstEstimate && isWithin24Hours(deal[settings.PD_DEAL_TRIAL_STARTED_AT])) {
+		await updateEngagementScore(deal, email, 3, settings);
+	}
+}
+
+async function handleInvoiceCreated(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	const currentCount = deal[settings.PD_DEAL_INVOICE_COUNT] || 0;
+	const isFirstInvoice = currentCount === 0;
+
+	await pipedrivePut(
+		`/deals/$${deal.id}`,
+		{ [settings.PD_DEAL_INVOICE_COUNT]: currentCount + 1 },
+		settings
+	);
+
+	if (isFirstInvoice && isWithin24Hours(deal[settings.PD_DEAL_TRIAL_STARTED_AT])) {
+		await updateEngagementScore(deal, email, 2, settings);
+	}
+}
+
+async function handleChecklistCompleted(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	const alreadyCompleted = deal[settings.PD_DEAL_CHECKLIST_COMPLETED];
+
+	await pipedrivePut(
+		`/deals/$${deal.id}`,
+		{ [settings.PD_DEAL_CHECKLIST_COMPLETED]: true },
+		settings
+	);
+
+	if (!alreadyCompleted && isWithin24Hours(deal[settings.PD_DEAL_TRIAL_STARTED_AT])) {
+		await updateEngagementScore(deal, email, 2, settings);
+	}
+}
+
+async function handlePaywallViewed(event, settings) {
+	const email = event.context?.traits?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	const current = deal[settings.PD_DEAL_PAYWALL_VIEWS] || 0;
+	const isFirstView = current === 0;
+
+	await pipedrivePut(
+		`/deals/$${deal.id}`,
+		{ [settings.PD_DEAL_PAYWALL_VIEWS]: current + 1 },
+		settings
+	);
+
+	if (isFirstView && isWithin24Hours(deal[settings.PD_DEAL_TRIAL_STARTED_AT])) {
+		await updateEngagementScore(deal, email, 1, settings);
+	}
+}
+
+async function handleSubscriptionStarted(event, settings) {
+	const email = event.context?.traits?.email || event.properties?.email;
+	if (!email) return;
+
+	const person = await findPersonByEmail(email, settings);
+	if (!person) return;
+
+	const deal = await findOpenDeal(person.id, settings.PIPEDRIVE_PIPELINE_ID, settings);
+	if (!deal) return;
+
+	await pipedrivePut(
+		`/deals/$${deal.id}`,
+		{
+			stage_id: parseInt(settings.PIPEDRIVE_STAGE_PAID),
+			value: (event.properties?.mrr || 99) * 12,
+			[settings.PIPEDRIVE_DEAL_FIELD_MRR]: event.properties?.mrr,
+			[settings.PIPEDRIVE_DEAL_FIELD_PLAN_NAME]: event.properties?.plan_name,
+			[settings.PD_DEAL_DAYS_IN_TRIAL]: event.properties?.days_in_trial_at_conversion
+		},
+		settings
+	);
+}
+EOT
   description   = null
   display_name  = null
   logo_url      = "https://cdn.filepicker.io/api/file/RmPmpcBTQZKaFeGQrdG5"
@@ -295,6 +742,70 @@ resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
       label       = "Pipedrive Domain"
       name        = "pipedriveDomain"
       required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Loops API key for score_tier contact property sync"
+      label       = "Loops API Key"
+      name        = "loopsApiKey"
+      required    = true
+      sensitive   = true
+      type        = "STRING"
+    },
+    {
+      description = "Comma-separated Pipedrive user IDs for round robin deal assignment, e.g. 12,34,56"
+      label       = "Rep IDs (Round Robin)"
+      name        = "pipedriveRepIds"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for numeric engagement score deal field"
+      label       = "Deal Field: Engagement Score"
+      name        = "pdDealEngagementScore"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for score tier (low/mid/high) deal field"
+      label       = "Deal Field: Score Tier"
+      name        = "pdDealScoreTier"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for invoice count deal field"
+      label       = "Deal Field: Invoice Count"
+      name        = "pdDealInvoiceCount"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for checklist completed boolean deal field"
+      label       = "Deal Field: Checklist Completed"
+      name        = "pdDealChecklistCompleted"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for revenue band deal field — create field first then add hash"
+      label       = "Deal Field: Revenue Band"
+      name        = "pdDealRevenueBand"
+      required    = false
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = "Pipedrive hash for company size deal field — create field first then add hash"
+      label       = "Deal Field: Company Size"
+      name        = "pdDealCompanySize"
+      required    = false
       sensitive   = false
       type        = "STRING"
     },
