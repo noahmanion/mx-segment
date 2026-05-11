@@ -12,14 +12,6 @@ resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
   settings = [
     {
       description = ""
-      label       = "4ee97b19e76069978c469661ce39b5"
-      name        = "4Ee97B19E76069978C469661Ce39B5"
-      required    = true
-      sensitive   = false
-      type        = "STRING"
-    },
-    {
-      description = ""
       label       = "pdDealChecklistCompleted"
       name        = "pdDealChecklistCompleted"
       required    = true
@@ -46,6 +38,14 @@ resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
       description = ""
       label       = "pdDealInvoiceCount"
       name        = "pdDealInvoiceCount"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = ""
+      label       = "pdDealRevenueBand"
+      name        = "4Ee97B19E76069978C469661Ce39B5"
       required    = true
       sensitive   = false
       type        = "STRING"
