@@ -17,7 +17,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     "4Ee97B19E76069978C469661Ce39B5" = "ab14d0700da777c2e187eee6cee3112161277977"
     pdDealActivatedAt                = "d288f8260dc83030c08bca0e5caa5925f10c0b50"
     pdDealChecklistCompleted         = "4ee97b19e76069978c469661ce39b5c41cbcce51"
-    pdDealCompanySize                = ""
+    pdDealCompanySize                = "f555cd3f5347104aa9c0d5c8e72b62e537a1f5d0"
     pdDealDaysInTrial                = ""
     pdDealEngagementScore            = ""
     pdDealEstimateCount              = "644f092d0e17c668e4299aaad3c297a10385e8ed"
