@@ -16,7 +16,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
   settings = jsonencode({
     "4Ee97B19E76069978C469661Ce39B5" = "ab14d0700da777c2e187eee6cee3112161277977"
     pdDealActivatedAt                = "d288f8260dc83030c08bca0e5caa5925f10c0b50"
-    pdDealChecklistCompleted         = ""
+    pdDealChecklistCompleted         = "4ee97b19e76069978c469661ce39b5c41cbcce51"
     pdDealCompanySize                = ""
     pdDealDaysInTrial                = ""
     pdDealEngagementScore            = ""
