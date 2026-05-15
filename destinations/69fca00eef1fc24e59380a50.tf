@@ -35,7 +35,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pdPipelineReengagement           = "9"
     pipedriveApiKey                  = "••••••••••ec29"
     pipedriveDealFieldChannel        = "bfd5a1d2a026b6296bd963f04970bfbc0a2cb6d4"
-    pipedriveDealFieldMrr            = ""
+    pipedriveDealFieldMrr            = "mrr"
     pipedriveDealFieldPlanName       = "8bb1e4cfbe9f3ddb8cb3e02fcd49f89a330d5519"
     pipedriveDomain                  = "mxbuild.pipedrive.com"
     pipedriveFieldIndustry           = "b71a9d4d54446c84af8ad0e667e5c7dd9de123b0"
