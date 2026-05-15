@@ -18,7 +18,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pdDealActivatedAt                = "d288f8260dc83030c08bca0e5caa5925f10c0b50"
     pdDealChecklistCompleted         = "4ee97b19e76069978c469661ce39b5c41cbcce51"
     pdDealCompanySize                = "f555cd3f5347104aa9c0d5c8e72b62e537a1f5d0"
-    pdDealDaysInTrial                = ""
+    pdDealDaysInTrial                = "892dd0c72de9fc0a8410ac5ad71156a5c7a65fe2"
     pdDealEngagementScore            = "d4dfa00f8274b1eed74b1d1ec894046a304f22d5"
     pdDealEstimateCount              = "644f092d0e17c668e4299aaad3c297a10385e8ed"
     pdDealInvoiceCount               = "2a56b8d44bfa03c8e1578efe5f89b833023df1d9"
