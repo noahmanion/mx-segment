@@ -28,7 +28,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pdDealTrialEndsAt                = "67cb4d14727edd7dbc131a1085681b3d3761a108"
     pdDealTrialStartedAt             = "27e1a517dce119659fe4e46eb0bad0669df0d7c5"
     pdFieldHasReferralCode           = ""
-    pdOrgActivatedAt                 = ""
+    pdOrgActivatedAt                 = "d7ae9da1fdcc497d7a06e8e338c17d173072945b"
     pdOrgSegmentCoId                 = "2fb6172028e32647d3d956904051aa668167c46a"
     pdOrgTrialEndsAt                 = "432fe77882af7b2a79f0c0fe7c3dcfc3747af8f7"
     pdOrgTrialStartedAt              = "48bf7d174e00f638141f3bf3905d073fd76cad50"
