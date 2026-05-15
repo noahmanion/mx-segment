@@ -39,7 +39,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pipedriveDealFieldPlanName       = "8bb1e4cfbe9f3ddb8cb3e02fcd49f89a330d5519"
     pipedriveDomain                  = "mxbuild.pipedrive.com"
     pipedriveFieldIndustry           = "b71a9d4d54446c84af8ad0e667e5c7dd9de123b0"
-    pipedriveFieldIsTest             = ""
+    pipedriveFieldIsTest             = "1596bc23fac1cd4503cc614d7f21f32f5089ab8d"
     pipedriveFieldReferrerUrl        = "94b648a6171d6cc72fadd11a6ed5ebbc9695d1c7"
     pipedriveFieldSignupSource       = "cabefab88801646ddeff0b1de1f4e3f0c30b1983"
     pipedriveFieldUtmCampaign        = "26f716e0c9f3d6cc0cee7bd51e2da4018bfe9bdd"
