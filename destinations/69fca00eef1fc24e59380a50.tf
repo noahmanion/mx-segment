@@ -34,6 +34,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pdOrgSegmentCoId                 = "2fb6172028e32647d3d956904051aa668167c46a"
     pdOrgTrialEndsAt                 = "432fe77882af7b2a79f0c0fe7c3dcfc3747af8f7"
     pdOrgTrialStartedAt              = "48bf7d174e00f638141f3bf3905d073fd76cad50"
+    pdPersonGclid                    = "814d6dcea003803c64fcbca27067755143342cb7"
     pdPipelineReengagement           = "9"
     pipedriveApiKey                  = "••••••••••ec29"
     pipedriveDealFieldChannel        = "bfd5a1d2a026b6296bd963f04970bfbc0a2cb6d4"
