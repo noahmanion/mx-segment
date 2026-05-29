@@ -75,6 +75,14 @@ resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
       type        = "STRING"
     },
     {
+      description = ""
+      label       = "pdPersonGclid"
+      name        = "pdPersonGclid"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
       description = "40"
       label       = "pipedriveStageLeadIncoming"
       name        = "pipedriveStageLeadIncoming"
