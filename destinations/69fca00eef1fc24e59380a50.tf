@@ -23,7 +23,7 @@ resource "segment_destination" "id-69fca00eef1fc24e59380a50" {
     pdDealEstimateCount              = "644f092d0e17c668e4299aaad3c297a10385e8ed"
     pdDealInvoiceCount               = "2a56b8d44bfa03c8e1578efe5f89b833023df1d9"
     pdDealLastEstimateAt             = "b36c93bb23bb6bc3b7dbc29be4ee61e027cb9081"
-    pdDealLastInvoiceAt              = ""
+    pdDealLastInvoiceAt              = "57a2bb72fe0ee3986aaf5bfe87b40122d03b962f"
     pdDealPaymentApplicationAt       = ""
     pdDealPaywallViews               = "d1c21fcf1a44cff6dc2bfaf7398aba951bc1c1a2"
     pdDealScoreTier                  = "d84d98832f20cb29ae058ce5041936a5f374d08b"
