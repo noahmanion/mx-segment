@@ -53,7 +53,7 @@ resource "segment_destination" "id-69fc9dc7ec185405bf0315f8" {
     pipedriveOrgFieldPlan            = "a46adb4c76b9b5f2da6ec82bf1598f8e94892422"
     pipedrivePipelineId              = "8"
     pipedriveStageChurnDetected      = "45"
-    pipedriveStageLeadIncoming       = ""
+    pipedriveStageLeadIncoming       = "40"
     pipedriveStageOnboarded          = "42"
     pipedriveStagePaid               = "44"
     pipedriveStageQualification      = "40"
