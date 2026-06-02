@@ -4,7 +4,7 @@ import {
 }
 
 resource "segment_destination" "id-6a1f3f97a84c3cb88a8c575d" {
-  enabled = false
+  enabled = true
   metadata = {
     contacts          = null
     id                = "61806e472cd47ea1104885fc"
@@ -14,7 +14,13 @@ resource "segment_destination" "id-6a1f3f97a84c3cb88a8c575d" {
   }
   name = "Facebook CAPI Server"
   settings = jsonencode({
-    pixelId       = ""
+    dynamicAuthSettings = {
+      configId = "6a1f3f97a84c3cb88a8c575d"
+      oauth = {
+        type = "noAuth"
+      }
+    }
+    pixelId       = "1251375650140164"
     testEventCode = ""
   })
   source_id = "pNNoNmJpKPz6odJierJ1yZ"
