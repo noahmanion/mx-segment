@@ -17,5 +17,5 @@ resource "segment_destination_subscription" "id-6a1efb66509bd4897a260766_hSnZR2g
     method = "POST"
     url    = "https://gambling-plenty-stallion.ngrok-free.dev/ingest?src=server"
   })
-  trigger = "type = \"track\" and type = \"identify\""
+  trigger = "type = \"track\" or type = \"identify\""
 }
