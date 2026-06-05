@@ -76,6 +76,14 @@ resource "segment_function" "id-dfn_69fba1ebb3063f2216b6280c" {
     },
     {
       description = ""
+      label       = "pdPersonCompanyId"
+      name        = "pdPersonCompanyId"
+      required    = true
+      sensitive   = false
+      type        = "STRING"
+    },
+    {
+      description = ""
       label       = "pdPersonGclid"
       name        = "pdPersonGclid"
       required    = true
