@@ -21,7 +21,7 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
     event_id = {
       "@path" = "$.messageId"
     }
-    event_name = "CompleteRegistration"
+    event_name = "AccountCreated"
     event_source_url = {
       "@path" = "$.context.page.url"
     }
