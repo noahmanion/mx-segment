@@ -28,7 +28,7 @@ resource "segment_destination" "id-6a2ab858717d73a326739047" {
     keyForExternalId               = ""
     legacyEvents                   = {}
     limitedDataUse                 = true
-    pixelId                        = ""
+    pixelId                        = "1251375650140164"
     standardEvents                 = {}
     standardEventsCustomProperties = []
     userIdAsExternalId             = false
