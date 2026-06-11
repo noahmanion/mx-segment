@@ -11,6 +11,7 @@ resource "segment_source" "id-vZc95pYco1hrCyvmPYcPkN" {
   }
   name = "Facebook Ads"
   settings = jsonencode({
+    accounts    = "act_2135322817293705"
     avatar      = "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=10101095105611717&height=50&width=50&ext=1783776487&hash=AfsnvKF2WwUMr8sI9BICC_P1"
     createdAt   = "2026-06-11T13:28:07.259Z"
     createdBy   = "noah@softpath.co"
