@@ -94,7 +94,7 @@ resource "segment_destination_subscription" "id-6a2221509fb548c8ad15ea32_k9iXFXL
         "@path" = "$.properties.fbc"
       }
       fbp = {
-        "@path" = "$.properties.fbp"
+        "@path" = "$.properties._fbp"
       }
       firstName = {
         "@path" = "$.context.traits.firstName"
