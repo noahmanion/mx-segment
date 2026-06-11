@@ -21,9 +21,11 @@ resource "segment_destination" "id-6a2ab858717d73a326739047" {
   }
   name = "Fscebook Pixel"
   settings = jsonencode({
-    automaticConfiguration         = true
-    blacklistPiiProperties         = []
-    contentTypes                   = {}
+    automaticConfiguration = true
+    blacklistPiiProperties = []
+    contentTypes = {
+      "Signup For Completed" = "CompleteRegistration"
+    }
     initWithExistingTraits         = false
     keyForExternalId               = ""
     legacyEvents                   = {}
