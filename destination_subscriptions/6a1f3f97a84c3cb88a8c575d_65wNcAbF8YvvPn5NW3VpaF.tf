@@ -36,7 +36,7 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
         "@path" = "$.userId"
       }
       fbc = {
-        "@path" = "$.properties.fbclid"
+        "@liquid" = "fb.1.{{ timestamp | date: \"%s\" }}000.{{ properties.fbclid }}"
       }
     }
   })
