@@ -91,10 +91,10 @@ resource "segment_destination_subscription" "id-6a2221509fb548c8ad15ea32_k9iXFXL
         }
       }
       fbc = {
-        "@path" = "$.properties.fbc"
+        "@path" = "$.traits.fbclid"
       }
       fbp = {
-        "@path" = "$.properties._fbp"
+        "@path" = "$.traits.fbp"
       }
       firstName = {
         "@path" = "$.context.traits.firstName"
@@ -113,5 +113,5 @@ resource "segment_destination_subscription" "id-6a2221509fb548c8ad15ea32_k9iXFXL
       }
     }
   })
-  trigger = "event = \"Signup Form Completed\""
+  trigger = "type = \"identify\""
 }
