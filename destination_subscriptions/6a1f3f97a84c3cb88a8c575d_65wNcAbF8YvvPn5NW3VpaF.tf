@@ -12,14 +12,14 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
   reverse_etl_schedule = null
   settings = jsonencode({
     __segment_internal_sync_mode = "add"
-    action_source                = "other"
+    action_source                = "website"
     app_data_field = {
       deviceTimezone = {
         "@path" = "$.context.timezone"
       }
     }
     event_id = {
-      "@path" = "$.messageId"
+      "@path" = "$.userId"
     }
     event_name = "CompleteRegistration"
     event_source_url = {
