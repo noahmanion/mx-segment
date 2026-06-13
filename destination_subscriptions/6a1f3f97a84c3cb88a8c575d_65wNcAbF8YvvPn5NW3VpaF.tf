@@ -35,6 +35,9 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
       externalId = {
         "@path" = "$.userId"
       }
+      fbc = {
+        "@path" = "$.properties.fbclid"
+      }
     }
   })
   trigger = "event = \"Account Created\""
