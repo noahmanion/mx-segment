@@ -107,5 +107,5 @@ resource "segment_destination_subscription" "id-6a3590aca2ebd389a77447cc_6vjhrG6
       "@path" = "$.properties.total"
     }
   })
-  trigger = "event = \"Signup Form Completed\""
+  trigger = "event = \"Account Created\""
 }
