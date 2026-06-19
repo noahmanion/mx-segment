@@ -8,7 +8,7 @@ resource "segment_destination_subscription" "id-69e7dcfa8c4f59cf1a076b2d_apUS2mf
   destination_id       = "69e7dcfa8c4f59cf1a076b2d"
   enabled              = true
   model_id             = null
-  name                 = "Complete Registration"
+  name                 = "Signup Form Completed"
   reverse_etl_schedule = null
   settings = jsonencode({
     __segment_internal_sync_mode = "add"
