@@ -8,7 +8,7 @@ resource "segment_destination_subscription" "id-69efa3908f4280a994b9c96b_qXdRyGA
   destination_id       = "69efa3908f4280a994b9c96b"
   enabled              = false
   model_id             = null
-  name                 = "Send Event"
+  name                 = "Identify"
   reverse_etl_schedule = null
   settings = jsonencode({
     email = {
@@ -24,5 +24,5 @@ resource "segment_destination_subscription" "id-69efa3908f4280a994b9c96b_qXdRyGA
       "@path" = "$.anonymousId"
     }
   })
-  trigger = "type = \"track\" and event != \"Experiment Viewed\" and event != \"Signed Out\" and properties. = \"\""
+  trigger = "type = \"identify\""
 }
