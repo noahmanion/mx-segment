@@ -29,6 +29,12 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
       "@path" = "$.timestamp"
     }
     user_data = {
+      client_ip_address = {
+        "@path" = "$.properties.client_ip"
+      }
+      client_user_agent = {
+        "@path" = "$.context.userAgent"
+      }
       email = {
         "@path" = "$.properties.email"
       }
@@ -37,6 +43,9 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
       }
       fbc = {
         "@liquid" = "fb.1.{{ timestamp | date: \"%s\" }}000.{{ properties.fbclid }}"
+      }
+      fbp = {
+        "@path" = "$.properties.fbp"
       }
     }
   })
