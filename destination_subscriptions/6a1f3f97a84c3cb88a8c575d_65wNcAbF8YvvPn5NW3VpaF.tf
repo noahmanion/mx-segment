@@ -26,14 +26,14 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
       "@path" = "$.context.page.url"
     }
     event_time = {
-      "@path" = "$.timestamp"
+      "@liquid" = "{{ timestamp | date: \"%s\" }}"
     }
     user_data = {
       client_ip_address = {
-        "@path" = "$.properties.client_ip"
+        "@liquid" = "{{ properties.client_ip | split: \":\" | first }}"
       }
       client_user_agent = {
-        "@path" = "$.context.userAgent"
+        "@path" = "$.properties.client_user_agent"
       }
       email = {
         "@path" = "$.properties.email"
@@ -42,7 +42,7 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
         "@path" = "$.userId"
       }
       fbc = {
-        "@liquid" = "fb.1.{{ timestamp | date: \"%s\" }}000.{{ properties.fbclid }}"
+        "@path" = "$.properties.fbc"
       }
       fbp = {
         "@path" = "$.properties.fbp"
