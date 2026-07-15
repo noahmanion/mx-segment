@@ -6,7 +6,7 @@ import {
 resource "segment_destination_subscription" "id-6a2221509fb548c8ad15ea32_saMBm8WFYvTqPE7uYKPS6" {
   action_id            = "evdcEYsm4uM3LNKtFqLBR4"
   destination_id       = "6a2221509fb548c8ad15ea32"
-  enabled              = true
+  enabled              = false
   model_id             = null
   name                 = "Signup Form Completed (Lead)"
   reverse_etl_schedule = null
