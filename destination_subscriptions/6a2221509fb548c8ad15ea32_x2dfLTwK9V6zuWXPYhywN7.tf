@@ -6,7 +6,7 @@ import {
 resource "segment_destination_subscription" "id-6a2221509fb548c8ad15ea32_x2dfLTwK9V6zuWXPYhywN7" {
   action_id            = "3d5gFs6q9sfwJVAYPDyGQc"
   destination_id       = "6a2221509fb548c8ad15ea32"
-  enabled              = true
+  enabled              = false
   model_id             = null
   name                 = "CTA Click"
   reverse_etl_schedule = null
