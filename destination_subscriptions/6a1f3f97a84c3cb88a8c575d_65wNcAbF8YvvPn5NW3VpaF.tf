@@ -49,5 +49,5 @@ resource "segment_destination_subscription" "id-6a1f3f97a84c3cb88a8c575d_65wNcAb
       }
     }
   })
-  trigger = "event = \"Account Created\""
+  trigger = "event = \"Account Created\" and properties.utm_source != null"
 }
