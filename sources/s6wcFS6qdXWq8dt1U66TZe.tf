@@ -9,7 +9,7 @@ resource "segment_source" "id-s6wcFS6qdXWq8dt1U66TZe" {
   metadata = {
     id = "ODf0vA6dcH"
   }
-  name = "Facebook Lead Ads 2"
+  name = "Facebook Lead Ads"
   settings = jsonencode({
     createdAt   = "2026-09-04T16:17:11.047Z"
     createdBy   = "noah@softpath.co"
