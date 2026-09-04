@@ -6,7 +6,7 @@ import {
 resource "segment_destination_subscription" "id-6a9af012190e658f8cee1814_tRSEVFupZWnw9sEqZFYRH8" {
   action_id            = "dGDsZPqKXXCQNrgDcr1oKb"
   destination_id       = "6a9af012190e658f8cee1814"
-  enabled              = true
+  enabled              = false
   model_id             = null
   name                 = "Create or Update an Activity"
   reverse_etl_schedule = null
