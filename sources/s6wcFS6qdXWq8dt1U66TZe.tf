@@ -16,5 +16,5 @@ resource "segment_source" "id-s6wcFS6qdXWq8dt1U66TZe" {
     displayName = "Noah Manion"
     pageId      = "939492382584867"
   })
-  slug = "meta_lead_ads"
+  slug = "facebook_lead_ads"
 }
