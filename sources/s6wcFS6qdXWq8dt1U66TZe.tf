@@ -11,7 +11,7 @@ resource "segment_source" "id-s6wcFS6qdXWq8dt1U66TZe" {
   }
   name = "Facebook Lead Ads 2"
   settings = jsonencode({
-    createdAt   = "2026-09-04T16:15:46.169Z"
+    createdAt   = "2026-09-04T16:17:11.047Z"
     createdBy   = "noah@softpath.co"
     displayName = "Noah Manion"
   })
