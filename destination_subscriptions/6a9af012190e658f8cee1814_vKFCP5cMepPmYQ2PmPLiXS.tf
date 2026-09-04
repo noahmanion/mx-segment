@@ -6,7 +6,7 @@ import {
 resource "segment_destination_subscription" "id-6a9af012190e658f8cee1814_vKFCP5cMepPmYQ2PmPLiXS" {
   action_id            = "66wGU3cfJrrdBk8CqekrJc"
   destination_id       = "6a9af012190e658f8cee1814"
-  enabled              = true
+  enabled              = false
   model_id             = null
   name                 = "Create or Update a Person"
   reverse_etl_schedule = null
