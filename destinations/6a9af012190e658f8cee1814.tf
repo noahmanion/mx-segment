@@ -17,9 +17,15 @@ resource "segment_destination" "id-6a9af012190e658f8cee1814" {
   }
   name = "Pipedrive Lead Ads"
   settings = jsonencode({
-    apiToken          = ""
-    dealField         = "id"
-    domain            = ""
+    apiToken  = "••••••••••ec29"
+    dealField = "id"
+    domain    = "mxbuild"
+    dynamicAuthSettings = {
+      configId = "69e6bbe9e9d0b41c5df9fc40"
+      oauth = {
+        type = "noAuth"
+      }
+    }
     organizationField = "id"
     personField       = "id"
   })
