@@ -63,25 +63,12 @@ resource "segment_destination_subscription" "id-6a9af012190e658f8cee1814_9jAKJvE
         }
       }
     }
-    organization_match_value = {
-      "@path" = "$.context.groupId"
-    }
-    person_match_field = "name"
+    person_match_field = "email"
     person_match_value = {
-      "@path" = "$.userId"
+      "@path" = "$.traits.email"
     }
     title = {
-      "@if" = {
-        else = {
-          "@path" = "$.properties.title"
-        }
-        exists = {
-          "@path" = "$.traits.title"
-        }
-        then = {
-          "@path" = "$.traits.title"
-        }
-      }
+      "@path" = "$.traits.name"
     }
   })
   trigger = "type = \"identify\""
