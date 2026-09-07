@@ -11,6 +11,11 @@ resource "segment_destination_subscription" "id-6a9af012190e658f8cee1814_vKFCP5c
   name                 = "Create or Update a Person"
   reverse_etl_schedule = null
   settings = jsonencode({
+    custom_fields = {
+      "26f716e0c9f3d6cc0cee7bd51e2da4018bfe9bdd" = {
+        "@path" = "$.traits.campaignName"
+      }
+    }
     email = {
       "@path" = "$.traits.email"
     }
