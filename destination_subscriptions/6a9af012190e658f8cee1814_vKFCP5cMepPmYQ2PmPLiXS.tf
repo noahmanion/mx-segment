@@ -14,14 +14,15 @@ resource "segment_destination_subscription" "id-6a9af012190e658f8cee1814_vKFCP5c
     email = {
       "@path" = "$.traits.email"
     }
+    match_field = "email"
     match_value = {
-      "@path" = "$.userId"
+      "@path" = "$.traits.email"
     }
     name = {
       "@path" = "$.traits.name"
     }
     phone = {
-      "@path" = "$.traits.phone"
+      "@path" = "$.traits.phone_number"
     }
   })
   trigger = "type = \"identify\""
